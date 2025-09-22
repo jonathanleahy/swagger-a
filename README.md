@@ -43,13 +43,26 @@ chmod +x setup.sh
 
 ### Development Mode
 
-After setup, run both frontend and backend with hot reload:
+After setup, you have multiple options to run the application:
 
+**Option 1: Using run.sh (Recommended - works from any directory)**
+```bash
+./run.sh
+```
+
+**Option 2: Using Make**
+```bash
+make dev        # Run both frontend and backend
+make frontend   # Run only frontend
+make backend    # Run only backend
+```
+
+**Option 3: Using dev-all.sh**
 ```bash
 ./dev-all.sh
 ```
 
-**Important:** Always run commands from the project root directory, not from subdirectories.
+**Important:** If you get "failed to load config from /frontend/vite.config.ts", you're likely running from the wrong directory. Use `./run.sh` which automatically handles the correct paths.
 
 This starts:
 - Frontend at http://localhost:4000
