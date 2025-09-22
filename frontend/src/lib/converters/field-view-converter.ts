@@ -58,10 +58,31 @@ export interface FieldBasedView {
 }
 
 export class FieldViewConverter {
+  private resolveSchema(schemaRef: string | any, normalized: NormalizedAPI): any {
+    // If it's already a schema object, return it
+    if (typeof schemaRef === 'object') {
+      // Handle $ref references
+      if (schemaRef.$ref) {
+        const refId = schemaRef.$ref.replace('#/components/schemas/', 'schema-').toLowerCase();
+        const schema = normalized.schemas.find(s => s.id === refId);
+        return schema || schemaRef;
+      }
+      return schemaRef;
+    }
+
+    // If it's a string ID, look it up
+    if (typeof schemaRef === 'string') {
+      const schema = normalized.schemas.find(s => s.id === schemaRef);
+      return schema || { type: 'object' };
+    }
+
+    return schemaRef;
+  }
+
   convertToFieldView(normalized: NormalizedAPI): FieldBasedView {
     const fieldView: FieldBasedView = {
       api_info: {
-        title: normalized.metadata.title,
+        title: (normalized.metadata as any).name || normalized.metadata.title || '',
         version: normalized.metadata.version,
         description: normalized.metadata.description,
         servers: normalized.metadata.servers,
@@ -113,7 +134,7 @@ export class FieldViewConverter {
 
           Object.entries(bodyData.content).forEach(([contentType, mediaType]) => {
             operation.request_body.content_types[contentType] = {
-              schema: mediaType.schema,
+              schema: this.resolveSchema(mediaType.schema, normalized),
               example: mediaType.example,
             };
           });
@@ -121,9 +142,17 @@ export class FieldViewConverter {
       }
 
       // Add responses with status codes as keys
-      if (endpoint.responses && endpoint.responses.length > 0) {
-        endpoint.responses.forEach(respRef => {
-          const [statusCode, responseId] = respRef.split(':');
+      if (endpoint.responses) {
+        // Handle both array and object formats
+        const responsesObj = Array.isArray(endpoint.responses)
+          ? endpoint.responses.reduce((acc, r) => {
+              const [code, id] = r.split(':');
+              acc[code] = id;
+              return acc;
+            }, {} as any)
+          : endpoint.responses;
+
+        Object.entries(responsesObj).forEach(([statusCode, responseId]) => {
           const responseData = normalized.responses.find(r => r.id === responseId);
           if (responseData) {
             operation.responses[statusCode] = {
@@ -134,7 +163,7 @@ export class FieldViewConverter {
             if (responseData.content) {
               Object.entries(responseData.content).forEach(([contentType, mediaType]) => {
                 operation.responses[statusCode].content_types[contentType] = {
-                  schema: mediaType.schema,
+                  schema: this.resolveSchema(mediaType.schema, normalized),
                   example: mediaType.example,
                 };
               });
@@ -162,8 +191,9 @@ export class FieldViewConverter {
 
   // Create a simplified view focusing on fields
   createSimplifiedFieldView(normalized: NormalizedAPI): any {
+    const title = (normalized.metadata as any).name || normalized.metadata.title || 'API';
     const simplified: any = {
-      api: `${normalized.metadata.title} v${normalized.metadata.version}`,
+      api: `${title} v${normalized.metadata.version}`,
       endpoints: {},
     };
 
@@ -190,27 +220,44 @@ export class FieldViewConverter {
       if (endpoint.requestBody) {
         const body = normalized.requestBodies.find(b => b.id === endpoint.requestBody);
         if (body && body.content['application/json']?.schema) {
-          const schema = body.content['application/json'].schema;
-          if (schema.properties) {
+          const schemaRef = body.content['application/json'].schema;
+          const schema = this.resolveSchema(schemaRef, normalized);
+          if (schema && schema.properties) {
             simplified.endpoints[key].request_fields = this.extractFields(schema.properties);
           }
         }
       }
 
       // Extract response fields
-      if (endpoint.responses && endpoint.responses.length > 0) {
-        const successResponse = endpoint.responses.find(r => r.startsWith('200:') || r.startsWith('201:'));
-        if (successResponse) {
-          const [, responseId] = successResponse.split(':');
+      if (endpoint.responses) {
+        // Handle both array and object formats
+        const responsesObj = Array.isArray(endpoint.responses)
+          ? endpoint.responses.reduce((acc, r) => {
+              const [code, id] = r.split(':');
+              acc[code] = id;
+              return acc;
+            }, {} as any)
+          : endpoint.responses;
+
+        // Find success response (200 or 201)
+        const successCode = Object.keys(responsesObj).find(code => code === '200' || code === '201');
+        if (successCode) {
+          const responseId = responsesObj[successCode];
           const response = normalized.responses.find(r => r.id === responseId);
           if (response && response.content?.['application/json']?.schema) {
-            const schema = response.content['application/json'].schema;
-            if (schema.properties) {
-              simplified.endpoints[key].response_fields = this.extractFields(schema.properties);
-            } else if (schema.items?.properties) {
-              simplified.endpoints[key].response_fields = {
-                array_of: this.extractFields(schema.items.properties)
-              };
+            const schemaRef = response.content['application/json'].schema;
+            const schema = this.resolveSchema(schemaRef, normalized);
+            if (schema) {
+              if (schema.properties) {
+                simplified.endpoints[key].response_fields = this.extractFields(schema.properties);
+              } else if (schema.type === 'array' && schema.items) {
+                const itemSchema = this.resolveSchema(schema.items, normalized);
+                if (itemSchema && itemSchema.properties) {
+                  simplified.endpoints[key].response_fields = {
+                    array_of: this.extractFields(itemSchema.properties)
+                  };
+                }
+              }
             }
           }
         }
