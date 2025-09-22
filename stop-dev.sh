@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}Stopping all development services...${NC}"
 
 # Kill processes on common ports
-lsof -ti:5173 | xargs kill -9 2>/dev/null
+lsof -ti:4000 | xargs kill -9 2>/dev/null
 lsof -ti:8082 | xargs kill -9 2>/dev/null
 
 # Kill any remaining node/go processes related to the project

@@ -34,7 +34,7 @@ npm run dev &
 FRONTEND_PID=$!
 
 echo -e "${GREEN}✅ All services started!${NC}"
-echo -e "${YELLOW}Frontend: http://localhost:5173${NC}"
+echo -e "${YELLOW}Frontend: http://localhost:4000${NC}"
 echo -e "${YELLOW}Backend:  http://localhost:8082${NC}"
 echo -e "${YELLOW}GraphQL:  http://localhost:8082/graphql${NC}"
 echo -e "\nPress Ctrl+C to stop all services"
