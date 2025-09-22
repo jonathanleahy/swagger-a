@@ -226,7 +226,9 @@ export class FieldViewConverter {
       // Extract parameter fields
       if (endpoint.parameters) {
         endpoint.parameters.forEach(paramId => {
-          const param = normalized.parameters.find(p => p.id === paramId);
+          // Resolve parameter $ref if needed
+          const resolvedParamId = this.resolveParameterRef(paramId);
+          const param = normalized.parameters.find(p => p.id === resolvedParamId);
           if (param) {
             simplified.endpoints[key].parameters[param.name] = param.schema?.type || 'string';
           }
@@ -476,5 +478,20 @@ export class FieldViewConverter {
 
     // Return the full schema object, preserving all properties
     return schema || null;
+  }
+
+  private resolveParameterRef(ref: string): string {
+    // Handle both full $ref and already-processed parameter IDs
+    if (ref.startsWith('#/components/parameters/')) {
+      // Full $ref like '#/components/parameters/GetProcessingCode'
+      const paramName = ref.replace('#/components/parameters/', '').toLowerCase();
+      return `param-${paramName}`;
+    } else if (ref.startsWith('param-')) {
+      // Already processed like 'param-getprocessingcode'
+      return ref;
+    } else {
+      // Plain name like 'GetProcessingCode'
+      return `param-${ref.toLowerCase()}`;
+    }
   }
 }

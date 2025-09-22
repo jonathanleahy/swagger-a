@@ -276,5 +276,52 @@ describe('FieldViewConverter - Parameter Handling', () => {
       expect(getUserPost.parameters['includeComments'].description).toBe('Include comments in response');
       expect(getUserPost.parameters['X-API-Key'].description).toBe('API authentication key');
     });
+
+    it('should resolve parameter $refs to types', () => {
+      const normalized = {
+        metadata: {
+          title: 'Test API',
+          version: '1.0.0'
+        },
+        endpoints: [
+          {
+            id: 'endpoint-1',
+            path: '/test',
+            method: 'GET',
+            parameters: ['#/components/parameters/GetProcessingCode', 'param-limit'],
+            responses: { '200': 'response-1' }
+          }
+        ],
+        parameters: [
+          {
+            id: 'param-getprocessingcode',
+            name: 'processingCode',
+            in: 'query',
+            required: true,
+            schema: { type: 'string', enum: ['fast', 'normal', 'slow'] }
+          },
+          {
+            id: 'param-limit',
+            name: 'limit',
+            in: 'query',
+            schema: { type: 'integer' }
+          }
+        ],
+        requestBodies: [],
+        responses: [
+          {
+            id: 'response-1',
+            description: 'OK'
+          }
+        ],
+        schemas: []
+      };
+
+      const simplified = converter.createSimplifiedFieldView(normalized);
+
+      expect(simplified.endpoints['GET /test'].parameters).toBeDefined();
+      expect(simplified.endpoints['GET /test'].parameters.processingCode).toBe('string');
+      expect(simplified.endpoints['GET /test'].parameters.limit).toBe('integer');
+    });
   });
 });
