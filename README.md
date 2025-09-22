@@ -30,13 +30,26 @@ A full-stack application for editing Swagger/OpenAPI specifications and converti
 
 ## Quick Start
 
+### First Time Setup
+
+Clone the repository and run the setup script:
+
+```bash
+git clone https://github.com/jonathanleahy/swagger-a.git
+cd swagger-a
+chmod +x setup.sh
+./setup.sh
+```
+
 ### Development Mode
 
-Run both frontend and backend with hot reload:
+After setup, run both frontend and backend with hot reload:
 
 ```bash
 ./dev-all.sh
 ```
+
+**Important:** Always run commands from the project root directory, not from subdirectories.
 
 This starts:
 - Frontend at http://localhost:4000
