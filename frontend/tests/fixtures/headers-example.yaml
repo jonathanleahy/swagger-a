@@ -1,0 +1,217 @@
+openapi: 3.0.0
+info:
+  title: Headers Example API
+  version: 1.0.0
+  description: API demonstrating response headers
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /auth/login:
+    post:
+      summary: User login
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Successful login
+          headers:
+            X-Auth-Token:
+              description: Authentication token
+              schema:
+                type: string
+            X-Refresh-Token:
+              description: Refresh token for getting new auth token
+              schema:
+                type: string
+            X-Token-Expiry:
+              description: Token expiration time in seconds
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  username:
+                    type: string
+                  roles:
+                    type: array
+                    items:
+                      type: string
+  /files/{fileId}:
+    get:
+      summary: Download file
+      operationId: downloadFile
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: attachment; filename="document.pdf"
+            Content-Type:
+              description: MIME type of the file
+              schema:
+                type: string
+            Content-Length:
+              description: File size in bytes
+              schema:
+                type: integer
+            ETag:
+              description: Entity tag for caching
+              schema:
+                type: string
+            Last-Modified:
+              description: Last modification date
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /api/data:
+    get:
+      summary: Get paginated data
+      operationId: getData
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Data list
+          headers:
+            X-Total-Count:
+              description: Total number of items
+              schema:
+                type: integer
+            X-Page:
+              description: Current page number
+              schema:
+                type: integer
+            X-Per-Page:
+              description: Items per page
+              schema:
+                type: integer
+            X-Total-Pages:
+              description: Total number of pages
+              schema:
+                type: integer
+            Link:
+              description: Pagination links (RFC 5988)
+              schema:
+                type: string
+                example: </api/data?page=2>; rel="next", </api/data?page=5>; rel="last"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    value:
+                      type: number
+  /api/async-job:
+    post:
+      summary: Start async job
+      operationId: startJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jobType:
+                  type: string
+                parameters:
+                  type: object
+      responses:
+        '202':
+          description: Job accepted
+          headers:
+            Location:
+              description: URL to check job status
+              schema:
+                type: string
+                format: uri
+            X-Job-Id:
+              description: Unique job identifier
+              schema:
+                type: string
+                format: uuid
+            Retry-After:
+              description: Seconds to wait before checking status
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [pending, processing]
+        '429':
+          description: Too many requests
+          headers:
+            Retry-After:
+              description: Seconds to wait before retry
+              schema:
+                type: integer
+            X-RateLimit-Limit:
+              description: Request limit
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              description: Remaining requests
+              schema:
+                type: integer
+            X-RateLimit-Reset:
+              description: Reset time (Unix timestamp)
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string

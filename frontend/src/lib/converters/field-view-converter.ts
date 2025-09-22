@@ -36,6 +36,12 @@ export interface FieldBasedView {
         responses: {
           [statusCode: string]: {
             description: string;
+            headers?: {
+              [headerName: string]: {
+                description?: string;
+                schema?: any;
+              };
+            };
             content_types?: {
               [contentType: string]: {
                 schema?: any;
@@ -157,12 +163,23 @@ export class FieldViewConverter {
           if (responseData) {
             operation.responses[statusCode] = {
               description: responseData.description,
+              headers: {},
               content_types: {},
             };
 
+            // Add response headers if present
+            if ((responseData as any).headers) {
+              Object.entries((responseData as any).headers).forEach(([headerName, headerData]: [string, any]) => {
+                operation.responses[statusCode].headers![headerName] = {
+                  description: headerData.description,
+                  schema: headerData.schema
+                };
+              });
+            }
+
             if (responseData.content) {
               Object.entries(responseData.content).forEach(([contentType, mediaType]) => {
-                operation.responses[statusCode].content_types[contentType] = {
+                operation.responses[statusCode].content_types![contentType] = {
                   schema: this.resolveSchema(mediaType.schema, normalized),
                   example: mediaType.example,
                 };
@@ -270,9 +287,29 @@ export class FieldViewConverter {
   private extractFields(properties: any): any {
     const fields: any = {};
     Object.entries(properties).forEach(([fieldName, fieldSchema]: [string, any]) => {
-      if (fieldSchema.type === 'object' && fieldSchema.properties) {
-        // Nested object
-        fields[fieldName] = this.extractFields(fieldSchema.properties);
+      if (fieldSchema.type === 'object') {
+        if (fieldSchema.properties) {
+          // Nested object with defined properties
+          fields[fieldName] = this.extractFields(fieldSchema.properties);
+        } else if (fieldSchema.additionalProperties) {
+          // Object with dynamic keys (additionalProperties)
+          if (typeof fieldSchema.additionalProperties === 'object') {
+            if (fieldSchema.additionalProperties.type === 'object' && fieldSchema.additionalProperties.properties) {
+              fields[fieldName] = {
+                '[key: string]': this.extractFields(fieldSchema.additionalProperties.properties)
+              };
+            } else {
+              fields[fieldName] = {
+                '[key: string]': fieldSchema.additionalProperties.type || 'any'
+              };
+            }
+          } else {
+            fields[fieldName] = { '[key: string]': 'any' };
+          }
+        } else {
+          // Generic object
+          fields[fieldName] = 'object';
+        }
       } else if (fieldSchema.type === 'array') {
         // Handle various array types
         if (fieldSchema.items) {

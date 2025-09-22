@@ -1,0 +1,395 @@
+openapi: 3.0.0
+info:
+  title: Complex Fields Example API
+  version: 1.0.0
+  description: API demonstrating complex field structures with objects and arrays
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /companies:
+    post:
+      summary: Create a company with complex structure
+      operationId: createCompany
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                headquarters:
+                  type: object
+                  properties:
+                    street:
+                      type: string
+                    city:
+                      type: string
+                    country:
+                      type: string
+                    coordinates:
+                      type: object
+                      properties:
+                        latitude:
+                          type: number
+                        longitude:
+                          type: number
+                departments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      budget:
+                        type: number
+                      employees:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            role:
+                              type: string
+                            skills:
+                              type: array
+                              items:
+                                type: string
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '201':
+          description: Company created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+  /reports:
+    get:
+      summary: Get complex report structure
+      operationId: getReports
+      responses:
+        '200':
+          description: Report data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: number
+                      average:
+                        type: number
+                      breakdown:
+                        type: object
+                        properties:
+                          byCategory:
+                            type: object
+                            additionalProperties:
+                              type: number
+                          byRegion:
+                            type: object
+                            additionalProperties:
+                              type: object
+                              properties:
+                                sales:
+                                  type: number
+                                units:
+                                  type: integer
+                  details:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        metrics:
+                          type: object
+                          properties:
+                            revenue:
+                              type: number
+                            costs:
+                              type: number
+                            profit:
+                              type: number
+                        transactions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              amount:
+                                type: number
+                              items:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    product:
+                                      type: string
+                                    quantity:
+                                      type: integer
+                                    price:
+                                      type: number
+  /configurations:
+    put:
+      summary: Update configuration with nested structures
+      operationId: updateConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                settings:
+                  type: object
+                  properties:
+                    general:
+                      type: object
+                      properties:
+                        theme:
+                          type: string
+                        language:
+                          type: string
+                        timezone:
+                          type: string
+                    features:
+                      type: object
+                      additionalProperties:
+                        type: object
+                        properties:
+                          enabled:
+                            type: boolean
+                          config:
+                            type: object
+                            additionalProperties: true
+                    notifications:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                          channels:
+                            type: array
+                            items:
+                              type: string
+                          filters:
+                            type: object
+                            properties:
+                              severity:
+                                type: array
+                                items:
+                                  type: string
+                              categories:
+                                type: array
+                                items:
+                                  type: string
+                permissions:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items:
+                      type: string
+      responses:
+        '200':
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  appliedSettings:
+                    type: object
+                    additionalProperties: true
+  /matrix-data:
+    get:
+      summary: Get matrix and grid data structures
+      operationId: getMatrixData
+      responses:
+        '200':
+          description: Matrix data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grid:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          value:
+                            type: number
+                          metadata:
+                            type: object
+                            properties:
+                              color:
+                                type: string
+                              label:
+                                type: string
+                  tensor:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: array
+                        items:
+                          type: number
+                  lookupTable:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: string
+components:
+  schemas:
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        headquarters:
+          $ref: '#/components/schemas/Address'
+        departments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Department'
+        financials:
+          type: object
+          properties:
+            revenue:
+              type: object
+              properties:
+                quarterly:
+                  type: array
+                  items:
+                    type: number
+                annual:
+                  type: number
+            expenses:
+              type: object
+              additionalProperties:
+                type: number
+        contacts:
+          type: object
+          properties:
+            primary:
+              $ref: '#/components/schemas/Contact'
+            secondary:
+              type: array
+              items:
+                $ref: '#/components/schemas/Contact'
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+    Department:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        budget:
+          type: number
+        manager:
+          $ref: '#/components/schemas/Employee'
+        teams:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              members:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employee'
+    Employee:
+      type: object
+      properties:
+        id:
+          type: string
+        personalInfo:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+        professionalInfo:
+          type: object
+          properties:
+            role:
+              type: string
+            department:
+              type: string
+            skills:
+              type: array
+              items:
+                type: string
+            certifications:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  issuer:
+                    type: string
+                  date:
+                    type: string
+                    format: date
+    Contact:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        communication:
+          type: object
+          properties:
+            email:
+              type: string
+            phone:
+              type: string
+            social:
+              type: object
+              additionalProperties:
+                type: string
