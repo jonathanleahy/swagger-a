@@ -7,8 +7,11 @@ A full-stack application for editing Swagger/OpenAPI specifications and converti
 - **Swagger/OpenAPI Editor**: Monaco-based editor with syntax highlighting and validation
 - **Bidirectional Conversion**: Convert between Swagger/OpenAPI and normalized JSON format
 - **Real-time Validation**: Instant feedback on specification errors
-- **Multiple Format Support**: Handles both OpenAPI 3.0 and Swagger 2.0
-- **JSON/YAML Support**: Works with both JSON and YAML formats
+- **Multiple Format Support**:
+  - OpenAPI 3.0.x (JSON/YAML)
+  - Swagger 2.0 (JSON/YAML)
+  - Supports `openapi.yaml`, `openapi.json`, `swagger.yaml`, `swagger.json`
+- **Automatic Format Detection**: Paste any valid Swagger/OpenAPI in JSON or YAML format
 - **Database-Ready Output**: Normalized JSON structure designed for efficient storage
 - **Modern UI**: Built with React, TypeScript, Tailwind CSS, and shadcn/ui components
 
