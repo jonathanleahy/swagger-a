@@ -1,0 +1,832 @@
+openapi: 3.0.0
+info:
+  title: Stripe API Example
+  version: 1.0.0
+  description: Subset of Stripe API demonstrating payment processing with $refs
+servers:
+  - url: https://api.stripe.com/v1
+paths:
+  /customers:
+    post:
+      summary: Create a customer
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequest'
+      responses:
+        '200':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+  /customers/{customerId}:
+    get:
+      summary: Retrieve a customer
+      operationId: getCustomer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+  /payment_intents:
+    post:
+      summary: Create a payment intent
+      operationId: createPaymentIntent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentIntentRequest'
+      responses:
+        '200':
+          description: Payment intent created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+  /charges:
+    post:
+      summary: Create a charge
+      operationId: createCharge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChargeRequest'
+      responses:
+        '200':
+          description: Charge created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Charge'
+components:
+  schemas:
+    Customer:
+      type: object
+      required:
+        - id
+        - object
+        - created
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [customer]
+        address:
+          $ref: '#/components/schemas/Address'
+        balance:
+          type: integer
+        created:
+          type: integer
+          format: int64
+        currency:
+          $ref: '#/components/schemas/Currency'
+        default_source:
+          type: string
+        delinquent:
+          type: boolean
+        description:
+          type: string
+        discount:
+          $ref: '#/components/schemas/Discount'
+        email:
+          type: string
+          format: email
+        invoice_prefix:
+          type: string
+        invoice_settings:
+          $ref: '#/components/schemas/InvoiceSettings'
+        livemode:
+          type: boolean
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        name:
+          type: string
+        phone:
+          type: string
+        preferred_locales:
+          type: array
+          items:
+            type: string
+        shipping:
+          $ref: '#/components/schemas/Shipping'
+        sources:
+          type: object
+          properties:
+            object:
+              type: string
+              enum: [list]
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaymentSource'
+            has_more:
+              type: boolean
+            url:
+              type: string
+        subscriptions:
+          type: object
+          properties:
+            object:
+              type: string
+              enum: [list]
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Subscription'
+            has_more:
+              type: boolean
+            url:
+              type: string
+        tax_exempt:
+          $ref: '#/components/schemas/TaxExempt'
+        tax_ids:
+          type: object
+          properties:
+            object:
+              type: string
+              enum: [list]
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/TaxId'
+            has_more:
+              type: boolean
+            url:
+              type: string
+    PaymentIntent:
+      type: object
+      required:
+        - id
+        - object
+        - amount
+        - currency
+        - status
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [payment_intent]
+        amount:
+          type: integer
+        amount_capturable:
+          type: integer
+        amount_details:
+          $ref: '#/components/schemas/AmountDetails'
+        amount_received:
+          type: integer
+        application:
+          type: string
+        application_fee_amount:
+          type: integer
+        automatic_payment_methods:
+          $ref: '#/components/schemas/AutomaticPaymentMethods'
+        canceled_at:
+          type: integer
+          format: int64
+        cancellation_reason:
+          $ref: '#/components/schemas/CancellationReason'
+        capture_method:
+          $ref: '#/components/schemas/CaptureMethod'
+        charges:
+          type: object
+          properties:
+            object:
+              type: string
+              enum: [list]
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Charge'
+            has_more:
+              type: boolean
+            url:
+              type: string
+        client_secret:
+          type: string
+        confirmation_method:
+          $ref: '#/components/schemas/ConfirmationMethod'
+        created:
+          type: integer
+          format: int64
+        currency:
+          $ref: '#/components/schemas/Currency'
+        customer:
+          type: string
+        description:
+          type: string
+        invoice:
+          type: string
+        last_payment_error:
+          $ref: '#/components/schemas/PaymentError'
+        livemode:
+          type: boolean
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        next_action:
+          $ref: '#/components/schemas/NextAction'
+        on_behalf_of:
+          type: string
+        payment_method:
+          type: string
+        payment_method_options:
+          $ref: '#/components/schemas/PaymentMethodOptions'
+        payment_method_types:
+          type: array
+          items:
+            type: string
+        processing:
+          $ref: '#/components/schemas/ProcessingDetails'
+        receipt_email:
+          type: string
+        review:
+          type: string
+        setup_future_usage:
+          $ref: '#/components/schemas/SetupFutureUsage'
+        shipping:
+          $ref: '#/components/schemas/Shipping'
+        source:
+          type: string
+        statement_descriptor:
+          type: string
+        statement_descriptor_suffix:
+          type: string
+        status:
+          $ref: '#/components/schemas/PaymentIntentStatus'
+        transfer_data:
+          $ref: '#/components/schemas/TransferData'
+        transfer_group:
+          type: string
+    Charge:
+      type: object
+      required:
+        - id
+        - object
+        - amount
+        - currency
+        - created
+        - paid
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [charge]
+        amount:
+          type: integer
+        amount_captured:
+          type: integer
+        amount_refunded:
+          type: integer
+        application:
+          type: string
+        application_fee:
+          type: string
+        application_fee_amount:
+          type: integer
+        balance_transaction:
+          type: string
+        billing_details:
+          $ref: '#/components/schemas/BillingDetails'
+        calculated_statement_descriptor:
+          type: string
+        captured:
+          type: boolean
+        created:
+          type: integer
+          format: int64
+        currency:
+          $ref: '#/components/schemas/Currency'
+        customer:
+          type: string
+        description:
+          type: string
+        destination:
+          type: string
+        dispute:
+          type: string
+        disputed:
+          type: boolean
+        failure_balance_transaction:
+          type: string
+        failure_code:
+          type: string
+        failure_message:
+          type: string
+        fraud_details:
+          $ref: '#/components/schemas/FraudDetails'
+        invoice:
+          type: string
+        livemode:
+          type: boolean
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        on_behalf_of:
+          type: string
+        order:
+          type: string
+        outcome:
+          $ref: '#/components/schemas/ChargeOutcome'
+        paid:
+          type: boolean
+        payment_intent:
+          type: string
+        payment_method:
+          type: string
+        payment_method_details:
+          $ref: '#/components/schemas/PaymentMethodDetails'
+        receipt_email:
+          type: string
+        receipt_number:
+          type: string
+        receipt_url:
+          type: string
+        refunded:
+          type: boolean
+        refunds:
+          type: object
+          properties:
+            object:
+              type: string
+              enum: [list]
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Refund'
+            has_more:
+              type: boolean
+            url:
+              type: string
+        review:
+          type: string
+        shipping:
+          $ref: '#/components/schemas/Shipping'
+        source:
+          $ref: '#/components/schemas/PaymentSource'
+        source_transfer:
+          type: string
+        statement_descriptor:
+          type: string
+        statement_descriptor_suffix:
+          type: string
+        status:
+          $ref: '#/components/schemas/ChargeStatus'
+        transfer_data:
+          $ref: '#/components/schemas/TransferData'
+        transfer_group:
+          type: string
+    Address:
+      type: object
+      properties:
+        city:
+          type: string
+        country:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: string
+        postal_code:
+          type: string
+        state:
+          type: string
+    BillingDetails:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/Address'
+        email:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+    Shipping:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/Address'
+        carrier:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        tracking_number:
+          type: string
+    PaymentSource:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+        type:
+          $ref: '#/components/schemas/PaymentSourceType'
+        card:
+          $ref: '#/components/schemas/Card'
+        bank_account:
+          $ref: '#/components/schemas/BankAccount'
+    Card:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [card]
+        brand:
+          $ref: '#/components/schemas/CardBrand'
+        checks:
+          $ref: '#/components/schemas/CardChecks'
+        country:
+          type: string
+        exp_month:
+          type: integer
+        exp_year:
+          type: integer
+        fingerprint:
+          type: string
+        funding:
+          $ref: '#/components/schemas/CardFunding'
+        last4:
+          type: string
+        three_d_secure_usage:
+          $ref: '#/components/schemas/ThreeDSecureUsage'
+        wallet:
+          $ref: '#/components/schemas/Wallet'
+    BankAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [bank_account]
+        account_holder_name:
+          type: string
+        account_holder_type:
+          type: string
+          enum: [individual, company]
+        account_type:
+          type: string
+        bank_name:
+          type: string
+        country:
+          type: string
+        currency:
+          $ref: '#/components/schemas/Currency'
+        fingerprint:
+          type: string
+        last4:
+          type: string
+        routing_number:
+          type: string
+        status:
+          $ref: '#/components/schemas/BankAccountStatus'
+    Metadata:
+      type: object
+      additionalProperties:
+        type: string
+    Currency:
+      type: string
+      description: Three-letter ISO currency code
+      pattern: '^[a-z]{3}$'
+    PaymentIntentStatus:
+      type: string
+      enum:
+        - requires_payment_method
+        - requires_confirmation
+        - requires_action
+        - processing
+        - requires_capture
+        - canceled
+        - succeeded
+    ChargeStatus:
+      type: string
+      enum: [succeeded, pending, failed]
+    PaymentSourceType:
+      type: string
+      enum: [card, bank_account, alipay_account, bitcoin_receiver]
+    CardBrand:
+      type: string
+      enum: [American Express, Diners Club, Discover, JCB, MasterCard, UnionPay, Visa, Unknown]
+    CardFunding:
+      type: string
+      enum: [credit, debit, prepaid, unknown]
+    BankAccountStatus:
+      type: string
+      enum: [new, validated, verified, verification_failed, errored]
+    # Request schemas
+    CreateCustomerRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        description:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        payment_method:
+          type: string
+        invoice_settings:
+          $ref: '#/components/schemas/InvoiceSettings'
+        shipping:
+          $ref: '#/components/schemas/Shipping'
+        balance:
+          type: integer
+        tax_exempt:
+          $ref: '#/components/schemas/TaxExempt'
+    CreatePaymentIntentRequest:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: integer
+        currency:
+          $ref: '#/components/schemas/Currency'
+        automatic_payment_methods:
+          $ref: '#/components/schemas/AutomaticPaymentMethods'
+        confirm:
+          type: boolean
+        customer:
+          type: string
+        description:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        off_session:
+          type: boolean
+        payment_method:
+          type: string
+        payment_method_data:
+          $ref: '#/components/schemas/PaymentMethodData'
+        payment_method_options:
+          $ref: '#/components/schemas/PaymentMethodOptions'
+        payment_method_types:
+          type: array
+          items:
+            type: string
+        receipt_email:
+          type: string
+        setup_future_usage:
+          $ref: '#/components/schemas/SetupFutureUsage'
+        shipping:
+          $ref: '#/components/schemas/Shipping'
+        statement_descriptor:
+          type: string
+        statement_descriptor_suffix:
+          type: string
+        transfer_data:
+          $ref: '#/components/schemas/TransferData'
+        transfer_group:
+          type: string
+    CreateChargeRequest:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: integer
+        currency:
+          $ref: '#/components/schemas/Currency'
+        customer:
+          type: string
+        description:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        receipt_email:
+          type: string
+        shipping:
+          $ref: '#/components/schemas/Shipping'
+        source:
+          type: string
+        statement_descriptor:
+          type: string
+        statement_descriptor_suffix:
+          type: string
+        transfer_data:
+          $ref: '#/components/schemas/TransferData'
+        transfer_group:
+          type: string
+    # Additional nested schemas
+    InvoiceSettings:
+      type: object
+      properties:
+        custom_fields:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              value:
+                type: string
+        default_payment_method:
+          type: string
+        footer:
+          type: string
+    Discount:
+      type: object
+      properties:
+        coupon:
+          $ref: '#/components/schemas/Coupon'
+        customer:
+          type: string
+        end:
+          type: integer
+          format: int64
+        start:
+          type: integer
+          format: int64
+        subscription:
+          type: string
+    Coupon:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [coupon]
+        amount_off:
+          type: integer
+        created:
+          type: integer
+          format: int64
+        currency:
+          $ref: '#/components/schemas/Currency'
+        duration:
+          type: string
+          enum: [forever, once, repeating]
+        duration_in_months:
+          type: integer
+        livemode:
+          type: boolean
+        max_redemptions:
+          type: integer
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        name:
+          type: string
+        percent_off:
+          type: number
+        redeem_by:
+          type: integer
+          format: int64
+        times_redeemed:
+          type: integer
+        valid:
+          type: boolean
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [subscription]
+        application:
+          type: string
+        application_fee_percent:
+          type: number
+        automatic_tax:
+          $ref: '#/components/schemas/AutomaticTax'
+        billing_cycle_anchor:
+          type: integer
+          format: int64
+        billing_thresholds:
+          $ref: '#/components/schemas/BillingThresholds'
+        cancel_at:
+          type: integer
+          format: int64
+        cancel_at_period_end:
+          type: boolean
+        canceled_at:
+          type: integer
+          format: int64
+        collection_method:
+          type: string
+          enum: [charge_automatically, send_invoice]
+        created:
+          type: integer
+          format: int64
+        current_period_end:
+          type: integer
+          format: int64
+        current_period_start:
+          type: integer
+          format: int64
+        customer:
+          type: string
+        days_until_due:
+          type: integer
+        default_payment_method:
+          type: string
+        default_source:
+          type: string
+        default_tax_rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxRate'
+        description:
+          type: string
+        discount:
+          $ref: '#/components/schemas/Discount'
+        ended_at:
+          type: integer
+          format: int64
+        items:
+          type: object
+          properties:
+            object:
+              type: string
+              enum: [list]
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/SubscriptionItem'
+            has_more:
+              type: boolean
+            url:
+              type: string
+    # Stub schemas for completeness
+    TaxExempt:
+      type: string
+      enum: [none, exempt, reverse]
+    TaxId:
+      type: object
+    AmountDetails:
+      type: object
+    AutomaticPaymentMethods:
+      type: object
+    CancellationReason:
+      type: string
+    CaptureMethod:
+      type: string
+    ConfirmationMethod:
+      type: string
+    PaymentError:
+      type: object
+    NextAction:
+      type: object
+    PaymentMethodOptions:
+      type: object
+    ProcessingDetails:
+      type: object
+    SetupFutureUsage:
+      type: string
+    TransferData:
+      type: object
+    FraudDetails:
+      type: object
+    ChargeOutcome:
+      type: object
+    PaymentMethodDetails:
+      type: object
+    Refund:
+      type: object
+    CardChecks:
+      type: object
+    ThreeDSecureUsage:
+      type: object
+    Wallet:
+      type: object
+    PaymentMethodData:
+      type: object
+    AutomaticTax:
+      type: object
+    BillingThresholds:
+      type: object
+    TaxRate:
+      type: object
+    SubscriptionItem:
+      type: object

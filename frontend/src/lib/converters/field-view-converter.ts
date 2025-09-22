@@ -235,7 +235,14 @@ export class FieldViewConverter {
 
       // Extract request body fields
       if (endpoint.requestBody) {
-        const body = normalized.requestBodies.find(b => b.id === endpoint.requestBody);
+        let body = normalized.requestBodies.find(b => b.id === endpoint.requestBody);
+
+        // Fallback: if exact match fails, try to find by partial match or use the first one
+        if (!body && normalized.requestBodies.length > 0) {
+          body = normalized.requestBodies.find(b => b.id.includes('body') || b.id.includes(endpoint.method.toLowerCase()))
+                 || normalized.requestBodies[0];
+        }
+
         if (body && body.content['application/json']?.schema) {
           const schemaRef = body.content['application/json'].schema;
           const schema = this.resolveSchema(schemaRef, normalized);
@@ -243,6 +250,8 @@ export class FieldViewConverter {
             simplified.endpoints[key].request_fields = this.extractFields(schema.properties, normalized);
           }
         }
+      } else {
+        console.log('No request body on endpoint');
       }
 
       // Extract response fields
@@ -269,10 +278,16 @@ export class FieldViewConverter {
                 simplified.endpoints[key].response_fields = this.extractFields(schema.properties, normalized);
               } else if (schema.type === 'array' && schema.items) {
                 const itemSchema = this.resolveSchema(schema.items, normalized);
-                if (itemSchema && itemSchema.properties) {
-                  simplified.endpoints[key].response_fields = {
-                    array_of: this.extractFields(itemSchema.properties, normalized)
-                  };
+                if (itemSchema) {
+                  if (itemSchema.properties) {
+                    // Array of objects
+                    simplified.endpoints[key].response_fields = [{
+                      ...this.extractFields(itemSchema.properties, normalized)
+                    }];
+                  } else {
+                    // Array of primitives
+                    simplified.endpoints[key].response_fields = [itemSchema.type || 'any'];
+                  }
                 }
               }
             }
@@ -300,9 +315,12 @@ export class FieldViewConverter {
 
         const resolved = this.resolveSchemaRef(fieldSchema.$ref, normalized);
         if (resolved) {
-          if (resolved.type === 'object' && resolved.properties) {
+          // Check if this is an object with properties
+          if (resolved.properties) {
             fields[fieldName] = this.extractFields(resolved.properties, normalized, newVisitedRefs);
-          } else if (resolved.type === 'array' && resolved.items) {
+          }
+          // Check if this is an array
+          else if (resolved.type === 'array' && resolved.items) {
             // Handle array with $ref items
             if (resolved.items.$ref) {
               // Check for circular reference in array items
@@ -316,8 +334,10 @@ export class FieldViewConverter {
                   fields[fieldName] = [{
                     ...this.extractFields(itemResolved.properties, normalized, itemVisitedRefs)
                   }];
+                } else if (itemResolved) {
+                  fields[fieldName] = [itemResolved.type || 'any'];
                 } else {
-                  fields[fieldName] = [itemResolved?.type || 'any'];
+                  fields[fieldName] = ['any'];
                 }
               }
             } else if (resolved.items.properties) {
@@ -327,10 +347,13 @@ export class FieldViewConverter {
             } else {
               fields[fieldName] = [resolved.items.type || 'any'];
             }
-          } else if (resolved.enum) {
-            // Handle enum types
+          }
+          // Check if this is an enum (enum types are always strings in OpenAPI)
+          else if (resolved.enum || (resolved as any).enum) {
             fields[fieldName] = 'string';
-          } else {
+          }
+          // Otherwise, use the type
+          else {
             fields[fieldName] = resolved.type || 'any';
           }
         } else {
@@ -433,22 +456,25 @@ export class FieldViewConverter {
   private resolveSchemaRef(ref: string, normalized?: NormalizedAPI): any {
     if (!normalized) return null;
 
-    // Extract schema name from $ref like '#/components/schemas/Customer'
-    const schemaName = ref.replace('#/components/schemas/', '').toLowerCase();
-    const schemaId = `schema-${schemaName}`;
+    let schemaId: string;
+
+    // Handle both full $ref and already-processed schema IDs
+    if (ref.startsWith('#/components/schemas/')) {
+      // Full $ref like '#/components/schemas/Customer'
+      const schemaName = ref.replace('#/components/schemas/', '').toLowerCase();
+      schemaId = `schema-${schemaName}`;
+    } else if (ref.startsWith('schema-')) {
+      // Already processed like 'schema-membershiplevel'
+      schemaId = ref;
+    } else {
+      // Plain name like 'Customer'
+      schemaId = `schema-${ref.toLowerCase()}`;
+    }
 
     // Find the schema in normalized schemas
     const schema = normalized.schemas.find(s => s.id === schemaId);
 
-    // If it's a scalar schema (not object), we might need to handle it differently
-    if (schema && !schema.properties && schema.type) {
-      // Return a minimal schema representation for non-object types
-      return {
-        type: schema.type,
-        enum: (schema as any).enum
-      };
-    }
-
+    // Return the full schema object, preserving all properties
     return schema || null;
   }
 }

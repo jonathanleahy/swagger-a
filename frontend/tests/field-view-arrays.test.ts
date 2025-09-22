@@ -51,12 +51,13 @@ describe('FieldViewConverter - Array Handling', () => {
       // Check GET /products response
       const getProducts = simplified.endpoints['GET /products'];
       expect(getProducts.response_fields).toBeDefined();
-      expect(getProducts.response_fields.array_of).toBeDefined();
-      expect(getProducts.response_fields.array_of.id).toBe('string');
-      expect(getProducts.response_fields.array_of.name).toBe('string');
-      expect(getProducts.response_fields.array_of.categories).toBeDefined();
-      expect(Array.isArray(getProducts.response_fields.array_of.categories)).toBe(true);
-      expect(getProducts.response_fields.array_of.categories[0]).toBe('string');
+      expect(Array.isArray(getProducts.response_fields)).toBe(true);
+      expect(getProducts.response_fields[0]).toBeDefined();
+      expect(getProducts.response_fields[0].id).toBe('string');
+      expect(getProducts.response_fields[0].name).toBe('string');
+      expect(getProducts.response_fields[0].categories).toBeDefined();
+      expect(Array.isArray(getProducts.response_fields[0].categories)).toBe(true);
+      expect(getProducts.response_fields[0].categories[0]).toBe('string');
     });
 
     it('should handle nested arrays in response', () => {

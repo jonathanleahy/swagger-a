@@ -1,0 +1,406 @@
+openapi: 3.0.0
+info:
+  title: GitHub API Example
+  version: 1.0.0
+  description: Subset of GitHub API demonstrating complex $ref patterns
+servers:
+  - url: https://api.github.com
+paths:
+  /repos/{owner}/{repo}:
+    get:
+      summary: Get repository
+      operationId: getRepository
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Repository details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repository'
+  /repos/{owner}/{repo}/pulls:
+    get:
+      summary: List pull requests
+      operationId: listPullRequests
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            $ref: '#/components/schemas/PullRequestState'
+      responses:
+        '200':
+          description: List of pull requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PullRequest'
+    post:
+      summary: Create pull request
+      operationId: createPullRequest
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePullRequestInput'
+      responses:
+        '201':
+          description: Created pull request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PullRequest'
+  /users/{username}:
+    get:
+      summary: Get user
+      operationId: getUser
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+components:
+  schemas:
+    Repository:
+      type: object
+      required:
+        - id
+        - name
+        - owner
+        - created_at
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        private:
+          type: boolean
+        owner:
+          $ref: '#/components/schemas/User'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type: string
+          format: date-time
+        language:
+          type: string
+        license:
+          $ref: '#/components/schemas/License'
+        topics:
+          type: array
+          items:
+            type: string
+        default_branch:
+          type: string
+        permissions:
+          $ref: '#/components/schemas/Permissions'
+        parent:
+          $ref: '#/components/schemas/Repository'  # Self-reference for forks
+        source:
+          $ref: '#/components/schemas/Repository'  # Self-reference for source
+    User:
+      type: object
+      required:
+        - id
+        - login
+        - type
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        avatar_url:
+          type: string
+          format: uri
+        type:
+          $ref: '#/components/schemas/UserType'
+        site_admin:
+          type: boolean
+        company:
+          type: string
+        blog:
+          type: string
+        location:
+          type: string
+        bio:
+          type: string
+        public_repos:
+          type: integer
+        followers:
+          type: integer
+        following:
+          type: integer
+    PullRequest:
+      type: object
+      required:
+        - id
+        - number
+        - state
+        - title
+        - user
+        - base
+        - head
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        state:
+          $ref: '#/components/schemas/PullRequestState'
+        title:
+          type: string
+        body:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        base:
+          $ref: '#/components/schemas/BranchRef'
+        head:
+          $ref: '#/components/schemas/BranchRef'
+        merged:
+          type: boolean
+        mergeable:
+          type: boolean
+        merged_by:
+          $ref: '#/components/schemas/User'
+        comments:
+          type: integer
+        commits:
+          type: integer
+        additions:
+          type: integer
+        deletions:
+          type: integer
+        changed_files:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+        merged_at:
+          type: string
+          format: date-time
+        labels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+        assignees:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        requested_reviewers:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        requested_teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Team'
+        milestone:
+          $ref: '#/components/schemas/Milestone'
+    BranchRef:
+      type: object
+      required:
+        - ref
+        - sha
+        - repo
+      properties:
+        ref:
+          type: string
+        sha:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        repo:
+          $ref: '#/components/schemas/Repository'
+    Label:
+      type: object
+      required:
+        - id
+        - name
+        - color
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+          pattern: '^[0-9a-fA-F]{6}$'
+        description:
+          type: string
+        default:
+          type: boolean
+    Team:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        privacy:
+          type: string
+          enum: [secret, closed]
+        permission:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        repos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Repository'
+        parent:
+          $ref: '#/components/schemas/Team'  # Self-reference for nested teams
+    Milestone:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        creator:
+          $ref: '#/components/schemas/User'
+        open_issues:
+          type: integer
+        closed_issues:
+          type: integer
+        state:
+          type: string
+          enum: [open, closed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        due_on:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+    License:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        spdx_id:
+          type: string
+        url:
+          type: string
+          format: uri
+    Permissions:
+      type: object
+      properties:
+        admin:
+          type: boolean
+        maintain:
+          type: boolean
+        push:
+          type: boolean
+        triage:
+          type: boolean
+        pull:
+          type: boolean
+    CreatePullRequestInput:
+      type: object
+      required:
+        - title
+        - head
+        - base
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        head:
+          type: string
+          description: The branch name to merge from
+        base:
+          type: string
+          description: The branch name to merge to
+        draft:
+          type: boolean
+          default: false
+        maintainer_can_modify:
+          type: boolean
+          default: true
+    PullRequestState:
+      type: string
+      enum: [open, closed, all]
+    UserType:
+      type: string
+      enum: [User, Organization, Bot]

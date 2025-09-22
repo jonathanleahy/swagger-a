@@ -48,7 +48,7 @@ describe('FieldViewConverter - $ref Resolution', () => {
       // Array of $refs (items)
       expect(createOrder.request_fields.items).toBeDefined();
       expect(Array.isArray(createOrder.request_fields.items)).toBe(true);
-      console.log('items:', JSON.stringify(createOrder.request_fields.items, null, 2));
+      console.log('customer:', JSON.stringify(createOrder.request_fields.customer, null, 2));
       expect(createOrder.request_fields.items[0].product).toBeDefined();
       expect(createOrder.request_fields.items[0].quantity).toBe('integer');
 
@@ -148,9 +148,12 @@ describe('FieldViewConverter - $ref Resolution', () => {
       expect(category.id).toBe('string');
       expect(category.name).toBe('string');
 
-      // Note: Self-referencing schemas should show 'circular-ref'
+      // Note: Self-referencing schemas should show one level deep and then 'circular-ref'
       // to avoid infinite recursion. The converter should handle this gracefully.
-      expect(category.parent).toBe('circular-ref');
+      expect(category.parent).toBeDefined();
+      expect(category.parent.id).toBe('string');
+      expect(category.parent.name).toBe('string');
+      expect(category.parent.parent).toBe('circular-ref');
       expect(category.children).toEqual(['circular-ref']);
     });
 
