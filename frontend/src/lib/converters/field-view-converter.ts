@@ -85,6 +85,75 @@ export class FieldViewConverter {
     return schemaRef;
   }
 
+  private resolveSchemaDeep(schema: any, normalized: NormalizedAPI, visitedRefs: Set<string> = new Set()): any {
+    if (!schema) return schema;
+
+    // Handle direct $ref
+    if (schema.$ref) {
+      // Check for circular reference
+      if (visitedRefs.has(schema.$ref)) {
+        return { type: 'circular-ref' };
+      }
+
+      const newVisitedRefs = new Set(visitedRefs);
+      newVisitedRefs.add(schema.$ref);
+
+      const resolved = this.resolveSchemaRef(schema.$ref, normalized);
+      if (resolved) {
+        // Remove the 'id' field from resolved schema before recursive resolution
+        const { id, ...cleanResolved } = resolved;
+        // Recursively resolve the resolved schema
+        return this.resolveSchemaDeep(cleanResolved, normalized, newVisitedRefs);
+      }
+      return schema; // Return original if can't resolve
+    }
+
+    // Clean the schema by removing 'id' field
+    const { id, ...cleanSchema } = schema;
+
+    // Handle object with properties
+    if (cleanSchema.type === 'object' && cleanSchema.properties) {
+      return {
+        ...cleanSchema,
+        properties: Object.entries(cleanSchema.properties).reduce((acc, [key, value]: [string, any]) => {
+          acc[key] = this.resolveSchemaDeep(value, normalized, visitedRefs);
+          return acc;
+        }, {} as any)
+      };
+    }
+
+    // Handle arrays
+    if (cleanSchema.type === 'array' && cleanSchema.items) {
+      return {
+        ...cleanSchema,
+        items: this.resolveSchemaDeep(cleanSchema.items, normalized, visitedRefs)
+      };
+    }
+
+    // Handle allOf, anyOf, oneOf
+    if (cleanSchema.allOf) {
+      return {
+        ...cleanSchema,
+        allOf: cleanSchema.allOf.map((s: any) => this.resolveSchemaDeep(s, normalized, visitedRefs))
+      };
+    }
+    if (cleanSchema.anyOf) {
+      return {
+        ...cleanSchema,
+        anyOf: cleanSchema.anyOf.map((s: any) => this.resolveSchemaDeep(s, normalized, visitedRefs))
+      };
+    }
+    if (cleanSchema.oneOf) {
+      return {
+        ...cleanSchema,
+        oneOf: cleanSchema.oneOf.map((s: any) => this.resolveSchemaDeep(s, normalized, visitedRefs))
+      };
+    }
+
+    // Return cleaned schema for primitives and other types
+    return cleanSchema;
+  }
+
   convertToFieldView(normalized: NormalizedAPI): FieldBasedView {
     const fieldView: FieldBasedView = {
       api_info: {
@@ -139,8 +208,9 @@ export class FieldViewConverter {
           };
 
           Object.entries(bodyData.content).forEach(([contentType, mediaType]) => {
+            const resolvedSchema = this.resolveSchema(mediaType.schema, normalized);
             operation.request_body.content_types[contentType] = {
-              schema: this.resolveSchema(mediaType.schema, normalized),
+              schema: this.resolveSchemaDeep(resolvedSchema, normalized),
               example: mediaType.example,
             };
           });
@@ -179,8 +249,9 @@ export class FieldViewConverter {
 
             if (responseData.content) {
               Object.entries(responseData.content).forEach(([contentType, mediaType]) => {
+                const resolvedSchema = this.resolveSchema(mediaType.schema, normalized);
                 operation.responses[statusCode].content_types![contentType] = {
-                  schema: this.resolveSchema(mediaType.schema, normalized),
+                  schema: this.resolveSchemaDeep(resolvedSchema, normalized),
                   example: mediaType.example,
                 };
               });
