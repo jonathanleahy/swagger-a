@@ -1,0 +1,384 @@
+openapi: 3.0.0
+info:
+  title: Parameters Example API
+  version: 1.0.0
+  description: API demonstrating various parameter types
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /users/{userId}/posts/{postId}:
+    get:
+      summary: Get a specific post by user
+      operationId: getUserPost
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+            format: uuid
+        - name: postId
+          in: path
+          required: true
+          description: Post ID
+          schema:
+            type: integer
+            format: int64
+        - name: includeComments
+          in: query
+          description: Include comments in response
+          schema:
+            type: boolean
+            default: false
+        - name: fields
+          in: query
+          description: Fields to include in response
+          schema:
+            type: array
+            items:
+              type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          description: API authentication key
+          schema:
+            type: string
+        - name: X-Request-ID
+          in: header
+          description: Unique request identifier
+          schema:
+            type: string
+            format: uuid
+        - name: sessionId
+          in: cookie
+          description: Session identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Post details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWithComments'
+  /search:
+    get:
+      summary: Search with complex parameters
+      operationId: search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 100
+        - name: filters
+          in: query
+          description: Search filters
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            properties:
+              category:
+                type: string
+              minPrice:
+                type: number
+              maxPrice:
+                type: number
+              tags:
+                type: array
+                items:
+                  type: string
+        - name: sort
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum:
+              - relevance
+              - date_asc
+              - date_desc
+              - price_asc
+              - price_desc
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 100
+            default: 20
+        - name: Accept-Language
+          in: header
+          description: Preferred language
+          schema:
+            type: string
+            default: en-US
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+  /upload:
+    post:
+      summary: Upload file with metadata
+      operationId: uploadFile
+      parameters:
+        - name: X-Upload-Token
+          in: header
+          required: true
+          description: Upload authorization token
+          schema:
+            type: string
+        - name: folder
+          in: query
+          description: Target folder
+          schema:
+            type: string
+            default: uploads
+        - name: tags
+          in: query
+          description: File tags
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+        - name: metadata
+          in: query
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  author:
+                    type: string
+                  description:
+                    type: string
+                  keywords:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                description:
+                  type: string
+      responses:
+        '201':
+          description: File uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileId:
+                    type: string
+                  url:
+                    type: string
+  /items/{itemId}:
+    put:
+      summary: Update item with validation
+      operationId: updateItem
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Z]{2}[0-9]{6}$'
+          description: Item ID in format XX000000
+        - name: If-Match
+          in: header
+          description: ETag for optimistic locking
+          schema:
+            type: string
+        - name: validate
+          in: query
+          description: Validate before saving
+          schema:
+            type: boolean
+            default: true
+        - name: fields
+          in: query
+          description: Fields to update
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - name
+                - description
+                - price
+                - quantity
+                - status
+          style: pipeDelimited
+          explode: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+      responses:
+        '200':
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+  /admin/users:
+    get:
+      summary: List users with admin filters
+      operationId: listUsersAdmin
+      parameters:
+        - name: status
+          in: query
+          description: Filter by user status
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - active
+                - inactive
+                - suspended
+                - deleted
+          style: form
+          explode: true
+        - name: roles
+          in: query
+          description: Filter by roles
+          schema:
+            type: array
+            items:
+              type: string
+          style: spaceDelimited
+          explode: false
+        - name: created
+          in: query
+          description: Created date range
+          schema:
+            type: object
+            properties:
+              from:
+                type: string
+                format: date
+              to:
+                type: string
+                format: date
+          style: deepObject
+          explode: true
+        - name: X-Admin-Token
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Audit-User
+          in: header
+          required: true
+          description: Admin user performing the query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+components:
+  schemas:
+    PostWithComments:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        author:
+          type: string
+        created:
+          type: string
+          format: date-time
+        comments:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              text:
+                type: string
+              author:
+                type: string
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        quantity:
+          type: integer
+        status:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        created:
+          type: string
+          format: date-time

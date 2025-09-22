@@ -271,10 +271,38 @@ export class FieldViewConverter {
     const fields: any = {};
     Object.entries(properties).forEach(([fieldName, fieldSchema]: [string, any]) => {
       if (fieldSchema.type === 'object' && fieldSchema.properties) {
+        // Nested object
         fields[fieldName] = this.extractFields(fieldSchema.properties);
-      } else if (fieldSchema.type === 'array' && fieldSchema.items?.properties) {
-        fields[fieldName] = [`array of ${fieldSchema.items.type || 'object'}`];
+      } else if (fieldSchema.type === 'array') {
+        // Handle various array types
+        if (fieldSchema.items) {
+          if (fieldSchema.items.properties) {
+            // Array of objects with properties
+            fields[fieldName] = [{
+              ...this.extractFields(fieldSchema.items.properties)
+            }];
+          } else if (fieldSchema.items.type === 'array') {
+            // Array of arrays (2D array)
+            if (fieldSchema.items.items) {
+              fields[fieldName] = [[fieldSchema.items.items.type || 'any']];
+            } else {
+              fields[fieldName] = [['any']];
+            }
+          } else if (fieldSchema.items.type === 'object' && fieldSchema.items.properties) {
+            // Array of objects
+            fields[fieldName] = [{
+              ...this.extractFields(fieldSchema.items.properties)
+            }];
+          } else {
+            // Array of primitives
+            fields[fieldName] = [fieldSchema.items.type || 'any'];
+          }
+        } else {
+          // Array without item specification
+          fields[fieldName] = ['any'];
+        }
       } else {
+        // Primitive type
         fields[fieldName] = fieldSchema.type || 'any';
       }
     });

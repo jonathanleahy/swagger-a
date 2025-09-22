@@ -1,0 +1,291 @@
+openapi: 3.0.0
+info:
+  title: Arrays Example API
+  version: 1.0.0
+  description: API demonstrating various array structures
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /products:
+    get:
+      summary: Get list of products
+      operationId: getProducts
+      parameters:
+        - name: categories
+          in: query
+          description: Filter by categories
+          schema:
+            type: array
+            items:
+              type: string
+        - name: tags
+          in: query
+          description: Filter by tags
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+    post:
+      summary: Create multiple products
+      operationId: createProducts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
+      responses:
+        '201':
+          description: Created products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  errors:
+                    type: array
+                    items:
+                      type: string
+  /orders:
+    post:
+      summary: Create an order
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+  /analytics:
+    get:
+      summary: Get analytics data
+      operationId: getAnalytics
+      responses:
+        '200':
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dailyStats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        views:
+                          type: integer
+                        sales:
+                          type: number
+                  topProducts:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: string
+                  matrix:
+                    type: array
+                    items:
+                      type: array
+                      items:
+                        type: number
+  /inventory:
+    patch:
+      summary: Update inventory levels
+      operationId: updateInventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                updates:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: string
+                      quantity:
+                        type: integer
+                      warehouses:
+                        type: array
+                        items:
+                          type: string
+      responses:
+        '200':
+          description: Inventory updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  successful:
+                    type: array
+                    items:
+                      type: string
+                  failed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        productId:
+                          type: string
+                        error:
+                          type: string
+components:
+  schemas:
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - price
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              alt:
+                type: string
+              sizes:
+                type: array
+                items:
+                  type: integer
+        variations:
+          type: array
+          items:
+            type: object
+            properties:
+              sku:
+                type: string
+              color:
+                type: string
+              sizes:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - XS
+                    - S
+                    - M
+                    - L
+                    - XL
+        ratings:
+          type: array
+          items:
+            type: number
+            minimum: 1
+            maximum: 5
+    Order:
+      type: object
+      required:
+        - id
+        - items
+      properties:
+        id:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+              quantity:
+                type: integer
+              variations:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    value:
+                      type: string
+        shippingAddresses:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum:
+                  - home
+                  - work
+                  - other
+              address:
+                type: string
+              city:
+                type: string
+              postalCode:
+                type: string
+        paymentMethods:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              last4:
+                type: string
+        statusHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+              notes:
+                type: array
+                items:
+                  type: string

@@ -139,9 +139,9 @@ function App() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="normalized" className="flex-1 overflow-auto m-0">
-                  <div className="p-4 bg-slate-900 h-full">
+                  <div className="p-4 bg-slate-900 h-full overflow-auto">
                     {convertedAPI ? (
-                      <pre className="text-xs text-emerald-400 font-mono">{JSON.stringify(convertedAPI, null, 2)}</pre>
+                      <pre className="text-xs text-emerald-400 font-mono whitespace-pre">{JSON.stringify(convertedAPI, null, 2)}</pre>
                     ) : (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center">
@@ -157,9 +157,9 @@ function App() {
                   </div>
                 </TabsContent>
                 <TabsContent value="field" className="flex-1 overflow-auto m-0">
-                  <div className="p-4 bg-slate-900 h-full">
+                  <div className="p-4 bg-slate-900 h-full overflow-auto">
                     {convertedAPI ? (
-                      <pre className="text-xs text-cyan-400 font-mono">{JSON.stringify(fieldConverter.convertToFieldView(convertedAPI), null, 2)}</pre>
+                      <pre className="text-xs text-cyan-400 font-mono whitespace-pre">{JSON.stringify(fieldConverter.convertToFieldView(convertedAPI), null, 2)}</pre>
                     ) : (
                       <div className="flex items-center justify-center h-full">
                         <p className="text-slate-400 text-sm">No data to display</p>
@@ -168,9 +168,9 @@ function App() {
                   </div>
                 </TabsContent>
                 <TabsContent value="simplified" className="flex-1 overflow-auto m-0">
-                  <div className="p-4 bg-slate-900 h-full">
+                  <div className="p-4 bg-slate-900 h-full overflow-auto">
                     {convertedAPI ? (
-                      <pre className="text-xs text-yellow-400 font-mono">{JSON.stringify(fieldConverter.createSimplifiedFieldView(convertedAPI), null, 2)}</pre>
+                      <pre className="text-xs text-yellow-400 font-mono whitespace-pre">{JSON.stringify(fieldConverter.createSimplifiedFieldView(convertedAPI), null, 2)}</pre>
                     ) : (
                       <div className="flex items-center justify-center h-full">
                         <p className="text-slate-500 text-sm">No data to display</p>
