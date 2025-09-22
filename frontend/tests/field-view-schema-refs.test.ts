@@ -91,51 +91,27 @@ describe('FieldView $ref Resolution Issue', () => {
 
     const fieldView = converter.convertToFieldView(normalized);
 
-    // Check request body schema
+    // Check request body schema - now simplified to just types
     const requestBodySchema = fieldView.paths['/organizations']['post'].request_body?.content_types['application/json'].schema;
-    console.log('Request body schema org field:', requestBodySchema.properties.org);
-    console.log('Request body schema status field:', requestBodySchema.properties.status);
-    console.log('Request body schema config.level field:', requestBodySchema.properties.config?.properties?.level);
+    console.log('Request body schema:', JSON.stringify(requestBodySchema, null, 2));
 
-    // EXPECTED: $refs should be resolved to actual schemas
-    // Currently failing - shows { "$ref": "schema-org" } instead of resolved schema
-    expect(requestBodySchema.properties.org).not.toHaveProperty('$ref');
-    expect(requestBodySchema.properties.org).toEqual({
-      type: 'integer',
-      description: 'Organization ID'
-    });
-
-    expect(requestBodySchema.properties.status).not.toHaveProperty('$ref');
-    expect(requestBodySchema.properties.status).toEqual({
-      type: 'string',
-      enum: ['active', 'inactive', 'pending']
-    });
+    // EXPECTED: $refs should be resolved to simple types
+    expect(requestBodySchema.org).toBe('integer');
+    expect(requestBodySchema.status).toBe('string');
 
     // Nested $ref should also be resolved
-    expect(requestBodySchema.properties.config.properties.level).not.toHaveProperty('$ref');
-    expect(requestBodySchema.properties.config.properties.level).toEqual({
-      type: 'string',
-      enum: ['basic', 'premium', 'enterprise']
-    });
+    expect(requestBodySchema.config.enabled).toBe('boolean');
+    expect(requestBodySchema.config.level).toBe('string');
 
     // Check response schema
     const responseSchema = fieldView.paths['/organizations']['post'].responses['200'].content_types!['application/json'].schema;
-    console.log('Response schema org field:', responseSchema.properties.org);
-    console.log('Response schema metadata field:', responseSchema.properties.metadata);
+    console.log('Response schema:', JSON.stringify(responseSchema, null, 2));
 
-    expect(responseSchema.properties.org).not.toHaveProperty('$ref');
-    expect(responseSchema.properties.org).toEqual({
-      type: 'integer',
-      description: 'Organization ID'
-    });
-
-    expect(responseSchema.properties.metadata).not.toHaveProperty('$ref');
-    expect(responseSchema.properties.metadata).toEqual({
-      type: 'object',
-      properties: {
-        created: { type: 'string', format: 'date-time' },
-        updated: { type: 'string', format: 'date-time' }
-      }
+    expect(responseSchema.id).toBe('string');
+    expect(responseSchema.org).toBe('integer');
+    expect(responseSchema.metadata).toEqual({
+      created: 'string',
+      updated: 'string'
     });
   });
 

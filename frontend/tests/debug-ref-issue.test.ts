@@ -118,8 +118,11 @@ describe('Debug $ref Issue', () => {
     const fieldView = converter.convertToFieldView(normalized);
     console.log('FieldView result:', JSON.stringify(fieldView.paths['/test']['post'].request_body, null, 2));
 
-    // Check what convertToFieldView produces
+    // Check what convertToFieldView produces - should now be simplified
     const requestBodySchema = fieldView.paths['/test']['post'].request_body?.content_types['application/json'].schema;
     console.log('Request body schema:', requestBodySchema);
+
+    // Verify it's simplified to just 'integer'
+    expect(requestBodySchema.org).toBe('integer');
   });
 });

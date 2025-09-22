@@ -85,6 +85,37 @@ export class FieldViewConverter {
     return schemaRef;
   }
 
+  private simplifySchema(schema: any, normalized: NormalizedAPI, visitedRefs: Set<string> = new Set()): any {
+    if (!schema) return schema;
+
+    // Handle primitives - return just the type
+    if (schema.type && schema.type !== 'object' && schema.type !== 'array') {
+      return schema.type;
+    }
+
+    // Handle arrays
+    if (schema.type === 'array' && schema.items) {
+      return [this.simplifySchema(schema.items, normalized, visitedRefs)];
+    }
+
+    // Handle objects
+    if (schema.type === 'object' && schema.properties) {
+      const simplified: any = {};
+      Object.entries(schema.properties).forEach(([key, value]: [string, any]) => {
+        simplified[key] = this.simplifySchema(value, normalized, visitedRefs);
+      });
+      return simplified;
+    }
+
+    // Handle circular reference
+    if (schema.type === 'circular-ref') {
+      return 'circular-ref';
+    }
+
+    // Default fallback
+    return schema.type || 'any';
+  }
+
   private resolveSchemaDeep(schema: any, normalized: NormalizedAPI, visitedRefs: Set<string> = new Set()): any {
     if (!schema) return schema;
 
@@ -209,8 +240,9 @@ export class FieldViewConverter {
 
           Object.entries(bodyData.content).forEach(([contentType, mediaType]) => {
             const resolvedSchema = this.resolveSchema(mediaType.schema, normalized);
+            const deepResolved = this.resolveSchemaDeep(resolvedSchema, normalized);
             operation.request_body.content_types[contentType] = {
-              schema: this.resolveSchemaDeep(resolvedSchema, normalized),
+              schema: this.simplifySchema(deepResolved, normalized),
               example: mediaType.example,
             };
           });
@@ -250,8 +282,9 @@ export class FieldViewConverter {
             if (responseData.content) {
               Object.entries(responseData.content).forEach(([contentType, mediaType]) => {
                 const resolvedSchema = this.resolveSchema(mediaType.schema, normalized);
+                const deepResolved = this.resolveSchemaDeep(resolvedSchema, normalized);
                 operation.responses[statusCode].content_types![contentType] = {
-                  schema: this.resolveSchemaDeep(resolvedSchema, normalized),
+                  schema: this.simplifySchema(deepResolved, normalized),
                   example: mediaType.example,
                 };
               });
