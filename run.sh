@@ -16,9 +16,14 @@ echo -e "${YELLOW}Working directory: $SCRIPT_DIR${NC}"
 cd "$SCRIPT_DIR"
 
 # Check if frontend dependencies are installed
-if [ ! -d "frontend/node_modules" ]; then
+if [ ! -d "frontend/node_modules" ] || [ ! -d "frontend/node_modules/@vitejs/plugin-react" ]; then
     echo -e "${YELLOW}Installing frontend dependencies...${NC}"
     cd frontend && npm install && cd ..
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Failed to install frontend dependencies${NC}"
+        echo -e "${YELLOW}Try running: cd frontend && npm install${NC}"
+        exit 1
+    fi
 fi
 
 # Check if backend dependencies are installed
