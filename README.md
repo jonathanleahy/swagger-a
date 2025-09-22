@@ -39,7 +39,7 @@ Run both frontend and backend with hot reload:
 ```
 
 This starts:
-- Frontend at http://localhost:3000
+- Frontend at http://localhost:3001
 - Backend at http://localhost:8082
 - GraphQL playground at http://localhost:8082/graphql
 
