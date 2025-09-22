@@ -240,7 +240,7 @@ export class FieldViewConverter {
           const schemaRef = body.content['application/json'].schema;
           const schema = this.resolveSchema(schemaRef, normalized);
           if (schema && schema.properties) {
-            simplified.endpoints[key].request_fields = this.extractFields(schema.properties);
+            simplified.endpoints[key].request_fields = this.extractFields(schema.properties, normalized);
           }
         }
       }
@@ -266,12 +266,12 @@ export class FieldViewConverter {
             const schema = this.resolveSchema(schemaRef, normalized);
             if (schema) {
               if (schema.properties) {
-                simplified.endpoints[key].response_fields = this.extractFields(schema.properties);
+                simplified.endpoints[key].response_fields = this.extractFields(schema.properties, normalized);
               } else if (schema.type === 'array' && schema.items) {
                 const itemSchema = this.resolveSchema(schema.items, normalized);
                 if (itemSchema && itemSchema.properties) {
                   simplified.endpoints[key].response_fields = {
-                    array_of: this.extractFields(itemSchema.properties)
+                    array_of: this.extractFields(itemSchema.properties, normalized)
                   };
                 }
               }
@@ -284,19 +284,73 @@ export class FieldViewConverter {
     return simplified;
   }
 
-  private extractFields(properties: any): any {
+  private extractFields(properties: any, normalized?: NormalizedAPI, visitedRefs: Set<string> = new Set()): any {
     const fields: any = {};
     Object.entries(properties).forEach(([fieldName, fieldSchema]: [string, any]) => {
-      if (fieldSchema.type === 'object') {
+      // Handle $ref references
+      if (fieldSchema.$ref) {
+        // Check for circular reference
+        if (visitedRefs.has(fieldSchema.$ref)) {
+          fields[fieldName] = 'circular-ref';
+          return;
+        }
+
+        const newVisitedRefs = new Set(visitedRefs);
+        newVisitedRefs.add(fieldSchema.$ref);
+
+        const resolved = this.resolveSchemaRef(fieldSchema.$ref, normalized);
+        if (resolved) {
+          if (resolved.type === 'object' && resolved.properties) {
+            fields[fieldName] = this.extractFields(resolved.properties, normalized, newVisitedRefs);
+          } else if (resolved.type === 'array' && resolved.items) {
+            // Handle array with $ref items
+            if (resolved.items.$ref) {
+              // Check for circular reference in array items
+              if (newVisitedRefs.has(resolved.items.$ref)) {
+                fields[fieldName] = ['circular-ref'];
+              } else {
+                const itemVisitedRefs = new Set(newVisitedRefs);
+                itemVisitedRefs.add(resolved.items.$ref);
+                const itemResolved = this.resolveSchemaRef(resolved.items.$ref, normalized);
+                if (itemResolved && itemResolved.properties) {
+                  fields[fieldName] = [{
+                    ...this.extractFields(itemResolved.properties, normalized, itemVisitedRefs)
+                  }];
+                } else {
+                  fields[fieldName] = [itemResolved?.type || 'any'];
+                }
+              }
+            } else if (resolved.items.properties) {
+              fields[fieldName] = [{
+                ...this.extractFields(resolved.items.properties, normalized, newVisitedRefs)
+              }];
+            } else {
+              fields[fieldName] = [resolved.items.type || 'any'];
+            }
+          } else if (resolved.enum) {
+            // Handle enum types
+            fields[fieldName] = 'string';
+          } else {
+            fields[fieldName] = resolved.type || 'any';
+          }
+        } else {
+          fields[fieldName] = 'any';
+        }
+      } else if (fieldSchema.type === 'object') {
         if (fieldSchema.properties) {
           // Nested object with defined properties
-          fields[fieldName] = this.extractFields(fieldSchema.properties);
+          fields[fieldName] = this.extractFields(fieldSchema.properties, normalized, visitedRefs);
         } else if (fieldSchema.additionalProperties) {
           // Object with dynamic keys (additionalProperties)
           if (typeof fieldSchema.additionalProperties === 'object') {
             if (fieldSchema.additionalProperties.type === 'object' && fieldSchema.additionalProperties.properties) {
               fields[fieldName] = {
-                '[key: string]': this.extractFields(fieldSchema.additionalProperties.properties)
+                '[key: string]': this.extractFields(fieldSchema.additionalProperties.properties, normalized, visitedRefs)
+              };
+            } else if (fieldSchema.additionalProperties.type === 'array' && fieldSchema.additionalProperties.items) {
+              // additionalProperties with array value
+              fields[fieldName] = {
+                '[key: string]': [fieldSchema.additionalProperties.items.type || 'any']
               };
             } else {
               fields[fieldName] = {
@@ -313,22 +367,52 @@ export class FieldViewConverter {
       } else if (fieldSchema.type === 'array') {
         // Handle various array types
         if (fieldSchema.items) {
-          if (fieldSchema.items.properties) {
+          if (fieldSchema.items.$ref) {
+            // Array items are $ref
+            // Check for circular reference
+            if (visitedRefs.has(fieldSchema.items.$ref)) {
+              fields[fieldName] = ['circular-ref'];
+            } else {
+              const newVisitedRefs = new Set(visitedRefs);
+              newVisitedRefs.add(fieldSchema.items.$ref);
+              const itemResolved = this.resolveSchemaRef(fieldSchema.items.$ref, normalized);
+              if (itemResolved && itemResolved.properties) {
+                fields[fieldName] = [{
+                  ...this.extractFields(itemResolved.properties, normalized, newVisitedRefs)
+                }];
+              } else {
+                fields[fieldName] = [itemResolved?.type || 'any'];
+              }
+            }
+          } else if (fieldSchema.items.properties) {
             // Array of objects with properties
             fields[fieldName] = [{
-              ...this.extractFields(fieldSchema.items.properties)
+              ...this.extractFields(fieldSchema.items.properties, normalized, visitedRefs)
             }];
           } else if (fieldSchema.items.type === 'array') {
             // Array of arrays (2D array)
             if (fieldSchema.items.items) {
-              fields[fieldName] = [[fieldSchema.items.items.type || 'any']];
+              if (fieldSchema.items.items.type === 'array') {
+                // 3D array
+                if (fieldSchema.items.items.items) {
+                  fields[fieldName] = [[[fieldSchema.items.items.items.type || 'any']]];
+                } else {
+                  fields[fieldName] = [[['any']]];
+                }
+              } else if (fieldSchema.items.items.type === 'object' && fieldSchema.items.items.properties) {
+                fields[fieldName] = [[{
+                  ...this.extractFields(fieldSchema.items.items.properties, normalized, visitedRefs)
+                }]];
+              } else {
+                fields[fieldName] = [[fieldSchema.items.items.type || 'any']];
+              }
             } else {
               fields[fieldName] = [['any']];
             }
           } else if (fieldSchema.items.type === 'object' && fieldSchema.items.properties) {
             // Array of objects
             fields[fieldName] = [{
-              ...this.extractFields(fieldSchema.items.properties)
+              ...this.extractFields(fieldSchema.items.properties, normalized, visitedRefs)
             }];
           } else {
             // Array of primitives
@@ -344,5 +428,27 @@ export class FieldViewConverter {
       }
     });
     return fields;
+  }
+
+  private resolveSchemaRef(ref: string, normalized?: NormalizedAPI): any {
+    if (!normalized) return null;
+
+    // Extract schema name from $ref like '#/components/schemas/Customer'
+    const schemaName = ref.replace('#/components/schemas/', '').toLowerCase();
+    const schemaId = `schema-${schemaName}`;
+
+    // Find the schema in normalized schemas
+    const schema = normalized.schemas.find(s => s.id === schemaId);
+
+    // If it's a scalar schema (not object), we might need to handle it differently
+    if (schema && !schema.properties && schema.type) {
+      // Return a minimal schema representation for non-object types
+      return {
+        type: schema.type,
+        enum: (schema as any).enum
+      };
+    }
+
+    return schema || null;
   }
 }

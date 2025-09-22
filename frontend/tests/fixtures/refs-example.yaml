@@ -1,0 +1,354 @@
+openapi: 3.0.0
+info:
+  title: References Example API
+  version: 1.0.0
+  description: API demonstrating $ref usage for schema reuse
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /orders:
+    post:
+      summary: Create an order
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customer:
+                  $ref: '#/components/schemas/Customer'
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OrderItem'
+                shippingAddress:
+                  $ref: '#/components/schemas/Address'
+                billingAddress:
+                  $ref: '#/components/schemas/Address'
+                payment:
+                  $ref: '#/components/schemas/PaymentMethod'
+                status:
+                  $ref: '#/components/schemas/OrderStatus'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+  /customers/{customerId}:
+    get:
+      summary: Get customer details
+      operationId: getCustomer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    $ref: '#/components/schemas/Customer'
+                  addresses:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Address'
+                  paymentMethods:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentMethod'
+                  orderHistory:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrderSummary'
+  /products:
+    get:
+      summary: List products
+      operationId: listProducts
+      responses:
+        '200':
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  categories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+components:
+  schemas:
+    Customer:
+      type: object
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+        membershipLevel:
+          $ref: '#/components/schemas/MembershipLevel'
+        preferences:
+          type: object
+          properties:
+            newsletter:
+              type: boolean
+            notifications:
+              $ref: '#/components/schemas/NotificationSettings'
+    Address:
+      type: object
+      required:
+        - street
+        - city
+        - postalCode
+        - country
+      properties:
+        type:
+          type: string
+          enum:
+            - home
+            - work
+            - billing
+            - shipping
+        street:
+          type: string
+        street2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+        isDefault:
+          type: boolean
+    PaymentMethod:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - credit_card
+            - debit_card
+            - paypal
+            - bank_transfer
+        cardDetails:
+          $ref: '#/components/schemas/CardDetails'
+        isDefault:
+          type: boolean
+    CardDetails:
+      type: object
+      properties:
+        last4:
+          type: string
+          pattern: '^\d{4}$'
+        brand:
+          type: string
+          enum:
+            - visa
+            - mastercard
+            - amex
+            - discover
+        expiryMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+        expiryYear:
+          type: integer
+    OrderStatus:
+      type: string
+      enum:
+        - pending
+        - processing
+        - shipped
+        - delivered
+        - cancelled
+        - refunded
+    MembershipLevel:
+      type: string
+      enum:
+        - bronze
+        - silver
+        - gold
+        - platinum
+    NotificationSettings:
+      type: object
+      properties:
+        email:
+          type: boolean
+        sms:
+          type: boolean
+        push:
+          type: boolean
+        frequency:
+          type: string
+          enum:
+            - immediate
+            - daily
+            - weekly
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+        customer:
+          $ref: '#/components/schemas/Customer'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        billingAddress:
+          $ref: '#/components/schemas/Address'
+        payment:
+          $ref: '#/components/schemas/PaymentMethod'
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        totals:
+          $ref: '#/components/schemas/OrderTotals'
+        timestamps:
+          $ref: '#/components/schemas/Timestamps'
+    OrderItem:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/Product'
+        quantity:
+          type: integer
+          minimum: 1
+        price:
+          type: number
+          format: float
+        discount:
+          type: number
+          format: float
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          $ref: '#/components/schemas/Price'
+        category:
+          $ref: '#/components/schemas/Category'
+        inventory:
+          type: object
+          properties:
+            available:
+              type: integer
+            reserved:
+              type: integer
+            warehouse:
+              $ref: '#/components/schemas/Warehouse'
+    Price:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: float
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        discountedAmount:
+          type: number
+          format: float
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        parent:
+          $ref: '#/components/schemas/Category'  # Self-referencing
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'  # Self-referencing array
+    Warehouse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        location:
+          $ref: '#/components/schemas/Address'
+    OrderTotals:
+      type: object
+      properties:
+        subtotal:
+          type: number
+        tax:
+          type: number
+        shipping:
+          type: number
+        discount:
+          type: number
+        total:
+          type: number
+    Timestamps:
+      type: object
+      properties:
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+        shipped:
+          type: string
+          format: date-time
+        delivered:
+          type: string
+          format: date-time
+    OrderSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        orderNumber:
+          type: string
+        date:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        total:
+          type: number
+        itemCount:
+          type: integer
