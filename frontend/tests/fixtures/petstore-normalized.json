@@ -1,0 +1,195 @@
+{
+  "id": "api-petstore-v1",
+  "metadata": {
+    "name": "Petstore API",
+    "version": "1.0.0",
+    "description": "A simple API to illustrate Swagger to JSON conversion",
+    "baseUrl": "https://petstore.swagger.io/v1",
+    "license": {
+      "name": "MIT"
+    },
+    "tags": ["pets"]
+  },
+  "endpoints": [
+    {
+      "id": "endpoint-list-pets",
+      "path": "/pets",
+      "method": "GET",
+      "operationId": "listPets",
+      "summary": "List all pets",
+      "tags": ["pets"],
+      "parameters": ["param-limit"],
+      "responses": {
+        "200": "response-list-pets-200",
+        "default": "response-error-default"
+      }
+    },
+    {
+      "id": "endpoint-create-pet",
+      "path": "/pets",
+      "method": "POST",
+      "operationId": "createPets",
+      "summary": "Create a pet",
+      "tags": ["pets"],
+      "requestBody": "request-body-create-pet",
+      "responses": {
+        "201": "response-create-pet-201",
+        "default": "response-error-default"
+      }
+    },
+    {
+      "id": "endpoint-get-pet",
+      "path": "/pets/{petId}",
+      "method": "GET",
+      "operationId": "showPetById",
+      "summary": "Info for a specific pet",
+      "tags": ["pets"],
+      "parameters": ["param-pet-id"],
+      "responses": {
+        "200": "response-get-pet-200",
+        "default": "response-error-default"
+      }
+    },
+    {
+      "id": "endpoint-delete-pet",
+      "path": "/pets/{petId}",
+      "method": "DELETE",
+      "operationId": "deletePet",
+      "summary": "Delete a pet",
+      "tags": ["pets"],
+      "parameters": ["param-pet-id"],
+      "responses": {
+        "204": "response-delete-pet-204",
+        "default": "response-error-default"
+      }
+    }
+  ],
+  "schemas": [
+    {
+      "id": "schema-pet",
+      "name": "Pet",
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "example": 10
+        },
+        "name": {
+          "type": "string",
+          "example": "doggie"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["available", "pending", "sold"]
+        }
+      }
+    },
+    {
+      "id": "schema-pets",
+      "name": "Pets",
+      "type": "array",
+      "maxItems": 100,
+      "items": "schema-pet"
+    },
+    {
+      "id": "schema-error",
+      "name": "Error",
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "id": "param-limit",
+      "name": "limit",
+      "in": "query",
+      "description": "How many items to return at one time (max 100)",
+      "required": false,
+      "schema": {
+        "type": "integer",
+        "maximum": 100,
+        "format": "int32"
+      }
+    },
+    {
+      "id": "param-pet-id",
+      "name": "petId",
+      "in": "path",
+      "description": "The id of the pet",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    }
+  ],
+  "responses": [
+    {
+      "id": "response-list-pets-200",
+      "description": "A paged array of pets",
+      "headers": {
+        "x-next": {
+          "description": "A link to the next page of responses",
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "content": {
+        "application/json": {
+          "schema": "schema-pets"
+        }
+      }
+    },
+    {
+      "id": "response-create-pet-201",
+      "description": "Null response"
+    },
+    {
+      "id": "response-get-pet-200",
+      "description": "Expected response to a valid request",
+      "content": {
+        "application/json": {
+          "schema": "schema-pet"
+        }
+      }
+    },
+    {
+      "id": "response-delete-pet-204",
+      "description": "Pet deleted successfully"
+    },
+    {
+      "id": "response-error-default",
+      "description": "unexpected error",
+      "content": {
+        "application/json": {
+          "schema": "schema-error"
+        }
+      }
+    }
+  ],
+  "requestBodies": [
+    {
+      "id": "request-body-create-pet",
+      "content": {
+        "application/json": {
+          "schema": "schema-pet"
+        }
+      },
+      "required": true
+    }
+  ]
+}
