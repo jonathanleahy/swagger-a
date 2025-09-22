@@ -385,7 +385,7 @@ export class SwaggerToJSONConverter {
             bodies.push({
               id: bodyId,
               description: operation.requestBody.description,
-              content: this.normalizeContent(operation.requestBody.content),
+              content: this.normalizeContent(operation.requestBody.content) || {},
               required: operation.requestBody.required,
             });
           }
