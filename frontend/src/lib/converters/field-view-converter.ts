@@ -232,6 +232,7 @@ export class FieldViewConverter {
           if (param) {
             simplified.endpoints[key].parameters[param.name] = param.schema?.type || 'string';
           }
+          // Note: Missing parameters are silently ignored to handle invalid $refs gracefully
         });
       }
 
@@ -484,14 +485,18 @@ export class FieldViewConverter {
     // Handle both full $ref and already-processed parameter IDs
     if (ref.startsWith('#/components/parameters/')) {
       // Full $ref like '#/components/parameters/GetProcessingCode'
-      const paramName = ref.replace('#/components/parameters/', '').toLowerCase();
-      return `param-${paramName}`;
+      const paramName = ref.replace('#/components/parameters/', '');
+      // Apply the same sanitization as generateId in SwaggerToJSONConverter
+      const sanitized = paramName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      return `param-${sanitized}`;
     } else if (ref.startsWith('param-')) {
       // Already processed like 'param-getprocessingcode'
       return ref;
     } else {
       // Plain name like 'GetProcessingCode'
-      return `param-${ref.toLowerCase()}`;
+      // Apply the same sanitization as generateId in SwaggerToJSONConverter
+      const sanitized = ref.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      return `param-${sanitized}`;
     }
   }
 }
