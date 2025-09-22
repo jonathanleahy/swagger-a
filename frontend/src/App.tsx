@@ -3,24 +3,41 @@ import { SwaggerEditor } from './components/editor/SwaggerEditor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Button } from './components/ui/button';
-import { FileJson, Code2, Copy, Download, Upload } from 'lucide-react';
+import { FileJson, Code2, Copy, Download, Upload, Database, List } from 'lucide-react';
 import type { NormalizedAPI } from './types';
+import { FieldViewConverter } from './lib/converters/field-view-converter';
 import './App.css';
 
 function App() {
   const [convertedAPI, setConvertedAPI] = useState<NormalizedAPI | null>(null);
   const [errors, setErrors] = useState<any[]>([]);
-  const [activeView, setActiveView] = useState<'editor' | 'json'>('editor');
+  const [activeView, setActiveView] = useState<'normalized' | 'field' | 'simplified'>('normalized');
+  const fieldConverter = new FieldViewConverter();
+
+  const getViewData = () => {
+    if (!convertedAPI) return null;
+
+    switch (activeView) {
+      case 'field':
+        return fieldConverter.convertToFieldView(convertedAPI);
+      case 'simplified':
+        return fieldConverter.createSimplifiedFieldView(convertedAPI);
+      default:
+        return convertedAPI;
+    }
+  };
 
   const handleCopyJSON = () => {
-    if (convertedAPI) {
-      navigator.clipboard.writeText(JSON.stringify(convertedAPI, null, 2));
+    const data = getViewData();
+    if (data) {
+      navigator.clipboard.writeText(JSON.stringify(data, null, 2));
     }
   };
 
   const handleDownloadJSON = () => {
-    if (convertedAPI) {
-      const blob = new Blob([JSON.stringify(convertedAPI, null, 2)], { type: 'application/json' });
+    const data = getViewData();
+    if (data) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -106,18 +123,22 @@ function App() {
               </div>
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-hidden">
-              <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'editor' | 'json')} className="h-full flex flex-col">
-                <TabsList className="mx-4 mb-2">
-                  <TabsTrigger value="editor" className="flex items-center gap-2">
-                    <FileJson className="w-4 h-4" />
-                    JSON View
+              <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'normalized' | 'field' | 'simplified')} className="h-full flex flex-col">
+                <TabsList className="mx-4 mb-2 grid w-max grid-cols-3">
+                  <TabsTrigger value="normalized" className="flex items-center gap-2">
+                    <Database className="w-4 h-4" />
+                    Normalized
                   </TabsTrigger>
-                  <TabsTrigger value="json" className="flex items-center gap-2">
-                    <Code2 className="w-4 h-4" />
-                    Raw JSON
+                  <TabsTrigger value="field" className="flex items-center gap-2">
+                    <FileJson className="w-4 h-4" />
+                    Field View
+                  </TabsTrigger>
+                  <TabsTrigger value="simplified" className="flex items-center gap-2">
+                    <List className="w-4 h-4" />
+                    Simplified
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="editor" className="flex-1 overflow-auto m-0">
+                <TabsContent value="normalized" className="flex-1 overflow-auto m-0">
                   <div className="p-4 bg-slate-900 h-full">
                     {convertedAPI ? (
                       <pre className="text-xs text-emerald-400 font-mono">{JSON.stringify(convertedAPI, null, 2)}</pre>
@@ -135,10 +156,21 @@ function App() {
                     )}
                   </div>
                 </TabsContent>
-                <TabsContent value="json" className="flex-1 overflow-auto m-0">
-                  <div className="p-4 bg-slate-50 h-full">
+                <TabsContent value="field" className="flex-1 overflow-auto m-0">
+                  <div className="p-4 bg-slate-900 h-full">
                     {convertedAPI ? (
-                      <pre className="text-xs text-slate-700 font-mono whitespace-pre-wrap">{JSON.stringify(convertedAPI, null, 2)}</pre>
+                      <pre className="text-xs text-cyan-400 font-mono">{JSON.stringify(fieldConverter.convertToFieldView(convertedAPI), null, 2)}</pre>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-slate-400 text-sm">No data to display</p>
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="simplified" className="flex-1 overflow-auto m-0">
+                  <div className="p-4 bg-slate-900 h-full">
+                    {convertedAPI ? (
+                      <pre className="text-xs text-yellow-400 font-mono">{JSON.stringify(fieldConverter.createSimplifiedFieldView(convertedAPI), null, 2)}</pre>
                     ) : (
                       <div className="flex items-center justify-center h-full">
                         <p className="text-slate-500 text-sm">No data to display</p>
